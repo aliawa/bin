@@ -1,0 +1,38 @@
+#!/bin/bash
+
+usage() {
+    PRG=$(basename $0)
+    echo " Converts a number to other formats"
+    echo " Examples:"
+    echo "    $PRG 0xAB"
+    echo "    $PRG hFF"
+    echo "    $PRG d123"
+    echo "    $PRG b101"
+    echo
+    exit
+}
+
+[ $# -lt 2 ] || usage
+
+STR=$(echo $1 | awk '{print toupper($1)}')
+B=""
+N=""
+
+if [[ "${STR:0:2}" == "0X" ]]; then
+    B=16
+    N=${STR:2}
+else
+    case "${STR:0:1}" in
+        B) B=2;;
+        H) B=16;;
+        D) B=10;;
+        *) usage
+    esac
+    N=${STR:1}
+fi
+
+echo  "DEC = $(echo "obase=10;ibase=$B;$N" | bc)"
+echo  "HEX = $(echo "obase=16;ibase=$B;$N" | bc)"
+echo  "BIN = $(echo "obase=2;ibase=$B;$N"  | bc)"
+echo
+

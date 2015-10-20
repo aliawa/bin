@@ -1,0 +1,34 @@
+#!/bin/bash
+
+usage() {
+    local prog=$(basename $0)
+    echo
+    echo " Convert IP number to doted decimal format"
+    echo " Usage:   $prog <h|d><number>"
+    echo " Example: $prog hc0a80001"
+    echo "          $prog d3232235521"
+    echo
+    exit
+}
+
+
+d2ip() {
+    IFS=" " read -r a b c d <<< $(echo "obase=256; $1" | bc)
+    echo ${a#0}.${b#0}.${c#0}.${d#0}
+}
+
+h2ip() {
+    A=$1
+    echo $((16#${A:0:2})).$((16#${A:3:2})).$((16#${A:5:2})).$((16#${A:7:2}))
+}
+
+
+[ $# -lt 1 ] && usage
+
+N=${1:1}
+case "${1:0:1}" in
+    h) h2ip $N;;
+    d) d2ip $N;;
+    *) usage;;
+esac
+
