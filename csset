@@ -28,10 +28,10 @@ if [ $# -eq 0 ]; then
     project_name="dp"
 fi
 
+SRC_DIR=$PAN_BUILD_DIR/src
+cd $SRC_DIR
 
-cd $PAN_BUILD_DIR
 CSOPT=""
-
 if [ $project_name == "ewua" ]; then 
     find $PTOP/config/ewua \
          $PTOP/libewn \
@@ -42,15 +42,16 @@ if [ $project_name == "ewua" ]; then
         -exec realpath {} \; > $PTOP/cscope.${project_name}.files
 
 elif [ $project_name == "dp" ]; then   
-    find $PAN_BUILD_DIR/src/apps \
-         $PAN_BUILD_DIR/src/libs \
-         $PAN_BUILD_DIR/src/sys \
-        -path $PAN_BUILD_DIR/src/apps/python* -prune -o \
-        -path $PAN_BUILD_DIR/src/apps/perl* -prune -o \
-        -path $PAN_BUILD_DIR/src/libs/python* -prune -o \
-        -path $PAN_BUILD_DIR/src/libs/cavium* -prune -o \
+    find $SRC_DIR/apps \
+         $SRC_DIR/libs \
+         $SRC_DIR/sys \
+         $SRC_DIR/mgmt \
+        -path $SRC_DIR/apps/python* -prune -o \
+        -path $SRC_DIR/apps/perl* -prune -o \
+        -path $SRC_DIR/libs/python* -prune -o \
+        -path $SRC_DIR/libs/cavium* -prune -o \
         -regex ".*\.[ch]\(pp\)?" \
-        -print > $PAN_BUILD_DIR/cscope.${project_name}.files
+        -print > $SRC_DIR/cscope.${project_name}.files
 
 elif [ $project_name == "kernel" ]; then   
     source $OSTOP/.config
@@ -77,6 +78,6 @@ cscope -icscope.${project_name}.files -ubq $CSOPT -fcscope.${project_name}.out
 
 
 echo "execute following to use with vim"
-echo "export CSCOPE_DB=\$PTOP/cscope.${project_name}.out"
+echo "export CSCOPE_DB=\$PAN_BUILD_DIR/src/cscope.${project_name}.out"
 echo
 
