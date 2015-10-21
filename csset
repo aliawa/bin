@@ -1,0 +1,82 @@
+#! /bin/bash
+
+usage(){
+    echo 
+    echo "usage: $(basename $0) [mand | ewua | kernel]"
+    echo "    sets up the cscope database for mand or ewua. PTOP and OSTOP must be "
+    echo "    defined for this script to work"
+    echo
+    echo "export CSCOPE_DB=\$PTOP/cscope.mand.out"
+    echo "export CSCOPE_DB=\$PTOP/cscope.ewua.out"
+    echo "export CSCOPE_DB=\$PTOP/cscope.kernel.out"
+    echo
+}
+
+
+if [[ "$1" == "-h"  || $# > 1 ]]; then
+    usage
+    exit
+fi
+if [[ -z "$PAN_BUILD_DIR" ]]; then
+    echo 
+    echo "PAN_BUILD_DIR must be defined"
+    echo
+    exit
+fi
+
+if [ $# -eq 0 ]; then 
+    project_name="dp"
+fi
+
+
+cd $PAN_BUILD_DIR
+CSOPT=""
+
+if [ $project_name == "ewua" ]; then 
+    find $PTOP/config/ewua \
+         $PTOP/libewn \
+         $OSTOP/lib/libqDecoder/ \
+         $OSTOP/lib/rtk_voip/ \
+         $OSTOP/lib/libresip/ \
+         -regex ".*\.[ch]\(pp\|xx\)?" \
+        -exec realpath {} \; > $PTOP/cscope.${project_name}.files
+
+elif [ $project_name == "dp" ]; then   
+    find $PAN_BUILD_DIR/src/apps \
+         $PAN_BUILD_DIR/src/libs \
+         $PAN_BUILD_DIR/src/sys \
+        -path $PAN_BUILD_DIR/src/apps/python* -prune -o \
+        -path $PAN_BUILD_DIR/src/apps/perl* -prune -o \
+        -path $PAN_BUILD_DIR/src/libs/python* -prune -o \
+        -path $PAN_BUILD_DIR/src/libs/cavium* -prune -o \
+        -regex ".*\.[ch]\(pp\)?" \
+        -print > $PAN_BUILD_DIR/cscope.${project_name}.files
+
+elif [ $project_name == "kernel" ]; then   
+    source $OSTOP/.config
+    LNX=$OSTOP/$CONFIG_LINUXDIR
+    ARCH=$(cat $OSTOP/vendors/Edgewater/$ENTARGET/config.arch | grep config.arch | awk -F/ '{print $4}')
+    CSOPT+="-k"
+
+    find  $LNX                                                                \
+        -path "$LNX/arch/*" ! -path "$LNX/arch/$ARCH*" -prune -o               \
+        -path "$LNX/include/asm-*" ! -path "$LNX/include/asm-$ARCH*"  ! -path "$LNX/include/asm-generic*" -prune -o \
+        -path "$LNX/tmp*" -prune -o                                           \
+        -path "$LNX/Documentation*" -prune -o                                 \
+        -path "$LNX/scripts*" -prune -o                                       \
+        -path "$LNX/drivers*" -prune -o                                       \
+        -name "*.[chxsS]" \
+        -print >$PTOP/cscope.${project_name}.files
+
+else 
+    echo "unknown project $project_name"
+    exit
+fi
+
+cscope -icscope.${project_name}.files -ubq $CSOPT -fcscope.${project_name}.out
+
+
+echo "execute following to use with vim"
+echo "export CSCOPE_DB=\$PTOP/cscope.${project_name}.out"
+echo
+
