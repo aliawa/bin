@@ -22,7 +22,7 @@ IP=${1#*@}
 HOSTS_FILE=~/.ssh/known_hosts
 
 if [ -e $HOSTS_FILE ]; then
-    sed -i .rmssh "/^$IP/d" $HOSTS_FILE
+    sed -i.rmssh "/^$IP/d" $HOSTS_FILE
     rm $HOSTS_FILE.rmssh
 fi
 
