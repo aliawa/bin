@@ -1,7 +1,21 @@
 #!/usr/bin/awk -f
-BEGIN {name="";print ""}
-/^[0-9]:/ {name=$1" "$2}
-$1~"link.*" {printf "%s [%s]\n", name,$2}
+BEGIN {name="";skip=0;print ""}
+/^[0-9]:/ {
+    name=$1" "$2
+    if ( index($0, "DOWN")) { 
+        skip=1 
+    } else {
+        skip=0
+    }
+}
+$1~"link.*" {
+    printf "%s [%s]\n", name,$2
+}
+{
+    if (skip) {
+        next
+    }
+}
 /inet6/  {
     printf "\t● %-6s| %s\n", $4, $2
 }
