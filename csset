@@ -1,22 +1,42 @@
 #! /bin/bash
 
+# ------------------------------------------------------------------------
+# USAGE 
+# ------------------------------------------------------------------------
+
 usage(){
     echo 
-    echo "usage: $(basename $0) [mand | ewua | kernel]"
-    echo "    sets up the cscope database for mand or ewua. PTOP and OSTOP must be "
-    echo "    defined for this script to work"
-    echo
-    echo "export CSCOPE_DB=\$PTOP/cscope.mand.out"
-    echo "export CSCOPE_DB=\$PTOP/cscope.ewua.out"
-    echo "export CSCOPE_DB=\$PTOP/cscope.kernel.out"
+    echo "usage: $(basename $0) [-u] "
+    echo "    -u    update only"
+    echo "    -h    help"
     echo
 }
 
 
-if [[ "$1" == "-h"  || $# > 1 ]]; then
-    usage
-    exit
-fi
+while [[ "$#" > 0 ]]; do 
+    case $1 in
+        -u) UPDATE="1";shift;;
+        -*) usage;exit;;
+        *) break;;
+    esac
+done
+
+
+
+# ------------------------------------------------------------------------
+# DEFINES
+# ------------------------------------------------------------------------
+
+CSOPT=""
+SRC_DIR=$PAN_BUILD_DIR/src
+lockdir=$SRC_DIR/.$(basename $0).lock
+
+
+
+# ------------------------------------------------------------------------
+# CHECK CONDITIONS
+# ------------------------------------------------------------------------
+
 if [[ -z "$PAN_BUILD_DIR" ]]; then
     echo 
     echo "PAN_BUILD_DIR must be defined"
@@ -24,60 +44,51 @@ if [[ -z "$PAN_BUILD_DIR" ]]; then
     exit
 fi
 
-if [ $# -eq 0 ]; then 
-    project_name="dp"
+
+if [[ ! -d "$SRC_DIR" ]]; then
+    echo 
+    echo "$SRC_DIR not found"
+    echo
+    exit
 fi
 
-SRC_DIR=$PAN_BUILD_DIR/src
-cd $SRC_DIR
 
-CSOPT=""
-if [ $project_name == "ewua" ]; then 
-    find $PTOP/config/ewua \
-         $PTOP/libewn \
-         $OSTOP/lib/libqDecoder/ \
-         $OSTOP/lib/rtk_voip/ \
-         $OSTOP/lib/libresip/ \
-         -regex ".*\.[ch]\(pp\|xx\)?" \
-        -exec realpath {} \; > $PTOP/cscope.${project_name}.files
+if mkdir "$lockdir"
+then
+    echo >&2 "successfully acquired lock"
 
-elif [ $project_name == "dp" ]; then   
+    # Remove lockdir when the script finishes, or when it receives a signal
+    trap 'rm -rf "$lockdir"' 0    # remove directory when script finishes
+else
+    echo >&2 "cannot acquire lock, giving up on $lockdir"
+    exit 0
+fi
+
+
+
+
+
+# ------------------------------------------------------------------------
+# MAIN
+# ------------------------------------------------------------------------
+
+if [[ -z "$UPDATE" ]]; then
+    # only run find when not updating
     find $SRC_DIR/apps \
-         $SRC_DIR/libs \
-         $SRC_DIR/sys \
-         $SRC_DIR/mgmt \
+        $SRC_DIR/libs \
+        $SRC_DIR/sys \
+        $SRC_DIR/mgmt \
         -path $SRC_DIR/apps/python* -prune -o \
         -path $SRC_DIR/apps/perl* -prune -o \
         -path $SRC_DIR/libs/python* -prune -o \
         -path $SRC_DIR/libs/cavium* -prune -o \
         -regex ".*\.[ch]\(pp\)?" \
-        -print > $SRC_DIR/cscope.${project_name}.files
-
-elif [ $project_name == "kernel" ]; then   
-    source $OSTOP/.config
-    LNX=$OSTOP/$CONFIG_LINUXDIR
-    ARCH=$(cat $OSTOP/vendors/Edgewater/$ENTARGET/config.arch | grep config.arch | awk -F/ '{print $4}')
-    CSOPT+="-k"
-
-    find  $LNX                                                                \
-        -path "$LNX/arch/*" ! -path "$LNX/arch/$ARCH*" -prune -o               \
-        -path "$LNX/include/asm-*" ! -path "$LNX/include/asm-$ARCH*"  ! -path "$LNX/include/asm-generic*" -prune -o \
-        -path "$LNX/tmp*" -prune -o                                           \
-        -path "$LNX/Documentation*" -prune -o                                 \
-        -path "$LNX/scripts*" -prune -o                                       \
-        -path "$LNX/drivers*" -prune -o                                       \
-        -name "*.[chxsS]" \
-        -print >$PTOP/cscope.${project_name}.files
-
-else 
-    echo "unknown project $project_name"
-    exit
+        -type f \
+        -print > $SRC_DIR/cscope.files
 fi
 
-cscope -icscope.${project_name}.files -ubq $CSOPT -fcscope.${project_name}.out
 
+cd $SRC_DIR
+cscope -icscope.files -ubqk $CSOPT -fcscope.out
 
-echo "execute following to use with vim"
-echo "export CSCOPE_DB=\$PAN_BUILD_DIR/src/cscope.${project_name}.out"
-echo
 
