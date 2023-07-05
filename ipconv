@@ -4,9 +4,10 @@ usage() {
     local prog=$(basename $0)
     echo
     echo " Convert IP number to doted decimal format"
-    echo " Usage:   $prog <h|d><number>"
+    echo " Usage:   $prog <h|d><number> | IPv4"
     echo " Example: $prog hc0a80001"
     echo "          $prog d3232235521"
+    echo "          $prog 12.13.14.15"
     echo
     exit
 }
@@ -19,16 +20,25 @@ d2ip() {
 
 h2ip() {
     A=$1
+    [[ ${#A} !=  8 ]] && echo "Wrong Length" && exit
     echo $((16#${A:0:2})).$((16#${A:2:2})).$((16#${A:4:2})).$((16#${A:6:2}))
 }
 
+dotted2hex() {
+    read -r a b c d <<< ${1//./ }
+    printf "%02x%02x%02x%02x\n" $a $b $c $d
+}
 
 [ $# -lt 1 ] && usage
 
-N=${1:1}
 case "${1:0:1}" in
-    h) h2ip $N;;
-    d) d2ip $N;;
-    *) usage;;
+    h) h2ip ${1:1};;
+    d) d2ip ${1:1};;
+    *) if [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+           dotted2hex $1
+       else 
+           usage
+       fi
+       ;;
 esac
 
