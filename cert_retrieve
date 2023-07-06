@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# usage: retrieve-cert.sh remote.host.name [port]
+#
+REMHOST=$1
+REMPORT=${2:-443}
+
+
+function usage {
+    echo 
+    echo "Retrives SSL certifcate of a server"
+    echo "Usage:"
+    echo "    $(basename $0) <host-name> [port]"
+    echo 
+}
+
+
+if [ -z "$REMHOST" ]; then
+    usage
+    exit 1
+fi
+
+
+echo |\
+openssl s_client -connect ${REMHOST}:${REMPORT} 2>&1 |\
+sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'
+
+

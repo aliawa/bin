@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+    echo "  Usage: "
+    echo "     myobjdump <platform-type> <symbols-file> <call-address> <offset> [objdump_options]"
+    echo
+    echo "     platform-type:     E4600, E250 etc."  
+    echo "     call-address:      The last address of disassembled code."
+    echo "     offset:            Offset for calculating the start address of disassebled code"  
+    echo "                        startAddress = callAddress - offset."
+    echo "     objdump_options:   -l show source filename and line number"
+    echo "                        -S display source code intermixed with disassembly"
+    echo
+    echo "  Example:"
+    echo "     myobjdump E4500 mand.symbols 0x00079708 0x3e4"
+    echo
+    exit 1
+fi
+
+
+# determine tool prefix
+source /home/aawais/.bash_functions
+export PLATFORM_TYPE=$1
+target_arch
+TOOLCHAIN=""
+if [ "$TARGET_ARCH" != "pentium4" ]; then
+    TOOLCHAIN="${TARGET_ARCH}-linux-"
+fi
+
+
+# symbols file usually mand.symbols
+SYM_FILE=$2
+
+
+# command line
+OFFST=$4
+CALL_ADDR=$3
+
+
+# determine start address
+START_ADDR=`printf 0x%x $(($CALL_ADDR-$OFFST))`
+
+
+# calculate stop address
+STOP_ADDR=$CALL_ADDR
+
+
+# objdump options
+OPTS=$5
+
+
+CMD="${TOOLCHAIN}objdump $SYM_FILE -dC --start-address=$START_ADDR --stop-address=$STOP_ADDR --no-show-raw-insn $OPTS"
+
+
+echo "start-address=$START_ADDR"
+echo "stop-address=$STOP_ADDR"
+echo "$CMD"
+
+# Now execute the command
+$CMD

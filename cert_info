@@ -1,0 +1,37 @@
+#! /bin/bash
+
+usage () {
+    echo
+    echo "Print information about certificate"
+    echo "    $(basename $0) <cert-file.pem>"
+    echo 
+}
+
+
+CERT_FILE=$1
+
+if [ -z "$CERT_FILE" ]; then 
+    usage
+    exit
+fi
+
+
+START_DATE_TMP=`openssl x509 -noout -in $CERT_FILE -startdate | sed 's/^.*=//'`
+START_DATE=`date +'%b %d, %Y' --date="$START_DATE_TMP"`
+
+END_DATE_TMP=`openssl x509 -noout -in $CERT_FILE -enddate | sed 's/^.*=//'`
+END_DATE=`date +'%b %d, %Y' --date="$END_DATE_TMP"`
+
+SUBJECT_HASH=`openssl x509 -noout -in $CERT_FILE -subject_hash | sed 's/^.*=//'`
+ISSUER_HASH=`openssl x509 -noout -in $CERT_FILE -issuer_hash | sed 's/^.*=//'`
+ 
+openssl x509 -noout -in $CERT_FILE -nameopt multiline -subject -issuer
+
+echo "Info="
+echo "    Validity                  = $START_DATE -- $END_DATE"
+echo "    Issuer Hash               = $ISSUER_HASH"
+echo "    Subject Hash              = $SUBJECT_HASH"
+
+
+
+
