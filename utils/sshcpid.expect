@@ -1,0 +1,34 @@
+#!/usr/bin/expect --
+
+if { [llength $argv] > 0 } {
+    set FW [lindex $argv 0 ]
+} else {
+    puts "*No FW ip provided*"
+    exit 1
+}
+
+set timeout -1 
+set pwds "P@l0Alt0nw pan pan" 
+spawn ssh-copy-id root@$FW
+
+foreach pwd $pwds {
+    expect  {
+        "\[pP\]assword: " { send [append pwd "\r"]}
+        "Disconnected" { exit 1 }
+        "Number of key(s) added:" {send_user "*Key Add Success*\n"; exit 0}
+        "already exist on the remote" { send_user "*All Good*\n"; exit 0}
+        "Permission denied, please try again." {exit 1 }
+        "Operation timed out" {exit 1}
+        "Are you sure you want to continue*\?" {send "yes\r";exp_continue}
+        "Connection refused" {exit 1}
+        "Connection timed out" {exit 1}
+        "ERROR: Host key verification failed." {exit 1}
+        "no matching host key type found." {exit 1}
+    }
+}
+
+# All passwords tried nothing worked
+send_user "\n*All Passwords tried*\n"
+close
+wait
+exit 1
