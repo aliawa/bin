@@ -1,7 +1,15 @@
 #!/usr/bin/awk -f
-BEGIN {name="";skip=0;print ""}
-/^[0-9]:/ {
-    name=$1" "$2
+BEGIN {
+    name=""
+    skip=0
+    print ""
+    digits = log(ARGV[1])/log(10) + 1
+    ARGV[1]=""
+}
+
+/^[0-9]+:/ {
+    num=$1
+    name=$2
     if ( index($0, "DOWN")) { 
         skip=1 
     } else {
@@ -9,7 +17,7 @@ BEGIN {name="";skip=0;print ""}
     }
 }
 $1~"link.*" {
-    printf "%s [%s]\n", name,$2
+    printf "%*d: %s [%s]\n", digits, num, name, $2
 }
 {
     if (skip) {
