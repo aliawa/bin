@@ -1,3 +1,4 @@
 #!/bin/bash
+DIR=$(dirname $0)
 max_num=$(ip link show | grep '^[0-9]\+' | tail -1 | cut -d: -f1)
-ip a s | ip_filter.awk $max_num
+ip a s | $DIR/ip_filter.awk $max_num
